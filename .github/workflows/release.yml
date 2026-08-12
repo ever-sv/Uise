@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip build twine
+
+      # A tag that disagrees with the version in pyproject publishes something
+      # nobody asked for, under a name that will never match again. Refuse early.
+      - name: The tag matches the declared version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          python - <<'PY'
+          import os, sys, tomllib
+          with open("pyproject.toml", "rb") as handle:
+              declared = tomllib.load(handle)["project"]["version"]
+          tagged = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          if declared != tagged:
+              sys.exit("tag %s does not match pyproject version %s" % (tagged, declared))
+          print("tag and version agree: %s" % declared)
+          PY
+
+      - run: python -m build
+      - run: python -m twine check dist/*
+
+      # The bug this catches is invisible in development, where the source tree
+      # is on the path anyway: a subpackage left out of the distribution. Install
+      # the built wheel somewhere clean and run a real end-to-end flow.
+      - name: The built wheel works standalone
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/python -m pip install --quiet dist/*.whl
+          mkdir -p /tmp/elsewhere && cd /tmp/elsewhere
+          /tmp/clean/bin/python - <<'PY'
+          import os, time
+          import uip, uise
+          from uip import codec, envelope
+          from uise import Agent, Node
+          from uise.bridges import a2a, mcp
+
+          for module in (uip, uise):
+              assert "site-packages" in module.__file__, module.__file__
+
+          node = Node(fee="0.0001", environment="test")
+          payer, payee = Agent.generate(), Agent.generate()
+          capability = {"id": "translate.text",
+                        "price": {"amount": "0.0004", "unit": "USD", "per": "call"}}
+          now = int(time.time() * 1000)
+          receipt = {"v": "uip/1", "rid": codec.ulid_new(now, os.urandom(10)),
+                     "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+                     "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+                     "payer": payer.did, "payee": payee.did,
+                     "capability": "translate.text", "amount": "0.0004", "unit": "USD",
+                     "terms_hash": envelope.terms_hash(capability),
+                     "issued_at": now, "issuer": node.did,
+                     "settlement": None, "anchor": None}
+          signed = payer.identity.sign_receipt_as(receipt, "payer")
+          signed = payee.identity.sign_receipt_as(signed, "payee")
+          issued = node.issue(signed)
+          envelope.verify_receipt(issued, require_long_term_issuer=True)
+
+          organization = node.organizations.create("smoke")["account_id"]
+          node.organizations.add_member(organization, payee.identity.join(organization))
+
+          tool = {"name": "get_weather", "inputSchema": {"type": "object"}}
+          assert mcp.tool_from_capability(mcp.capability_from_tool(tool)) == tool
+          assert a2a.AGENT_CARD_PATH == "/.well-known/agent-card.json"
+
+          node.close()
+          print("wheel verified standalone: %s" % node.identity.suite.name)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distribution
+          path: dist/
+
+  publish:
+    name: publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    # Trusted publishing: PyPI verifies this workflow's identity directly, so no
+    # API token exists to leak, rotate or paste anywhere.
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distribution
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
