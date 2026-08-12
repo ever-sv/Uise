@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # The central claim of this project: the conformance suite defines UIP-1 and
+  # runs anywhere, with nothing installed. There is deliberately no `pip install`
+  # step here - the day one appears, the claim is no longer true.
+  conformance:
+    name: conformance ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        include:
+          - { os: macos-latest, python: "3.9" }
+          - { os: macos-latest, python: "3.13" }
+          - { os: windows-latest, python: "3.9" }
+          - { os: windows-latest, python: "3.13" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run the conformance suite with zero dependencies
+        run: python conformance/test_conformance.py
+
+  # The package declares support for 3.9.2, so that has to be exercised. The test
+  # tooling needs 3.10, so this proves the floor by running the real end-to-end
+  # demonstration instead - post-quantum signing, issuance, log and audit.
+  floor:
+    name: sdk on the oldest supported python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e .
+      - run: python demo_node.py
+
+  tests:
+    name: tests ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        include:
+          - { os: macos-latest, python: "3.12" }
+          - { os: windows-latest, python: "3.12" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest tests/ -q
+
+  integrity:
+    name: integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+
+      # A change that alters the vectors alters the protocol. It has to appear as
+      # a diff here rather than reaching anybody quietly.
+      - name: Vectors regenerate byte for byte
+        run: |
+          python conformance/generate_vectors.py
+          git diff --exit-code -- conformance/vectors
+
+      - name: Demonstrations run end to end
+        run: |
+          python demo.py
+          python demo_node.py
+
+      - name: The API contract is valid and complete
+        run: python tools/check_contract.py
+
+      - name: Quality gate
+        run: python tools/quality.py

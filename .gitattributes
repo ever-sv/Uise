@@ -1,0 +1,10 @@
+# This project's premise is byte-exactness: canonical bytes are signed, and test
+# vectors are compared byte for byte. A line-ending conversion on checkout would
+# silently change those bytes on some machines and not others - the worst kind of
+# bug, because it only appears for other people.
+* text=auto eol=lf
+
+# Never touched at all. These are the normative vectors; git must not rewrite a
+# single byte of them under any platform or configuration.
+conformance/vectors/*.json -text
+LICENSE -text

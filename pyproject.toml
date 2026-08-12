@@ -7,7 +7,10 @@ name = "uise"
 version = "0.1.0"
 description = "Uise Interoperability Protocol (UIP-1): identity, verifiable messaging and signed receipts for autonomous AI agents."
 readme = "README.md"
-requires-python = ">=3.9"
+# The protocol core runs on any 3.9. The floor is set by `cryptography`, which
+# excludes 3.9.0 and 3.9.1; promising plain ">=3.9" would be a claim the package
+# cannot keep on those two patch releases.
+requires-python = ">=3.9.2"
 license = "Apache-2.0"
 authors = [{ name = "Uise" }]
 keywords = ["agents", "protocol", "did", "post-quantum", "receipts", "uip"]

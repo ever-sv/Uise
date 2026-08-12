@@ -1,5 +1,8 @@
 # Uise
 
+[![CI](https://github.com/ever-sv/Uise/actions/workflows/ci.yml/badge.svg)](https://github.com/ever-sv/Uise/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 **Proof of what AI agents did.**
 
 An agent books, buys, negotiates, delivers, spends. Then something goes wrong — the wrong
@@ -314,6 +317,20 @@ byte, so any change that would break the protocol shows up as a diff before it i
 To certify an implementation in Go, Rust or TypeScript, the vectors are plain JSON with nothing
 Python-specific about them. If all five steps in `conformance/README.md` pass, it conforms. If not,
 it does not. There is no grey area.
+
+Every push runs the conformance suite on **Python 3.9 through 3.13, across Linux, macOS and
+Windows, with nothing installed** — there is deliberately no `pip install` step in that job, because
+the day one appears the claim stops being true. CI also proves the vectors still regenerate byte for
+byte, that both demonstrations run, and that the API contract still matches the routes.
+
+Everything CI runs can be run locally with the same command:
+
+```bash
+python conformance/test_conformance.py   # zero dependencies
+python -m pytest tests/
+python tools/check_contract.py           # the OpenAPI document is valid and complete
+python tools/quality.py                  # no dead imports, English only
+```
 
 ---
 
