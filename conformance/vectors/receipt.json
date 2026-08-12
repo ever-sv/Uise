@@ -1,0 +1,190 @@
+{
+  "spec": "UIP-1 section 10 - Receipt",
+  "note": "The receipt is the primitive that distinguishes UIP. `terms_hash` anchors the price to the descriptor in force, making renegotiation after delivery cryptographically impossible. A receipt with fewer than three signatures proves intent, not obligation.",
+  "capability": {
+    "id": "translate.text",
+    "description": "Translates a text between two languages.",
+    "input_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object"
+    },
+    "output_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object"
+    },
+    "price": {
+      "amount": "0.0004",
+      "unit": "USD",
+      "per": "call"
+    }
+  },
+  "signing_input_hex": "7569702f312e726563656970740a7b22616d6f756e74223a22302e30303034222c22616e63686f72223a6e756c6c2c226361706162696c697479223a227472616e736c6174652e74657874222c226973737565645f6174223a313735343734353630313938372c22697373756572223a226469643a6b65793a7a364d6b67786a325233484c74515270506e76667670754b45636553716633745a48426a646d5a3366467a334a484747222c227061796565223a226469643a6b65793a7a364d6b684677584e46576f734c6575677653663477634c39743375755258756547534654526753764868576a354732222c227061796572223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c22726571756573745f6964223a2230314b3252375851344d3859565a3342394e3043365446484a44222c22726573706f6e73655f6964223a2230314b325237585a37433247484e5138543552315759424d4b41222c22726964223a2230314b325237593342385157355a4d3150344b3744584356474e222c22736574746c656d656e74223a6e756c6c2c227465726d735f68617368223a227368613235363a5661685a4e6450473652552d794e787976437752677947764e654430494c44726d324e4f5562366f59436b222c22756e6974223a22555344222c2276223a227569702f31227d",
+  "cases": [
+    {
+      "name": "complete receipt",
+      "valid": true,
+      "receipt": {
+        "v": "uip/1",
+        "rid": "01K2R7Y3B8QW5ZM1P4K7DXCVGN",
+        "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "payer": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "payee": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "capability": "translate.text",
+        "amount": "0.0004",
+        "unit": "USD",
+        "terms_hash": "sha256:VahZNdPG6RU-yNxyvCwRgyGvNeD0ILDrm2NOUb6oYCk",
+        "issued_at": 1754745601987,
+        "issuer": "did:key:z6Mkgxj2R3HLtQRpPnvfvpuKEceSqf3tZHBjdmZ3fFz3JHGG",
+        "settlement": null,
+        "anchor": null,
+        "sigs": {
+          "payer": "gh74gdICTo-6liIWZLKJmxZsqjQMHYrzaQ2pM6oYglJK2wR5oP5dYF-A7ON52eGCq9k_Cqx6C0ypZL-FU4Z7Bw",
+          "payee": "GgTrn9t9a5KQnJ_kSMkv1YFr4yV9Q-bX20TxHRBY0ohNW558Qv3ion-PjWQrTSTJ4xi_hjOV_FUygTqj0EQVCg",
+          "issuer": "EXnIwMEDm2eHRYczZiwAa6Q69GIlrty6z-C84THDiGkdpruj6R7Dp2s7ccCIifB_dOsa-VuSYsD6M-UO5wWUBg"
+        }
+      }
+    },
+    {
+      "name": "settled receipt",
+      "valid": true,
+      "receipt": {
+        "v": "uip/1",
+        "rid": "01K2R7Y3B8QW5ZM1P4K7DXCVGN",
+        "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "payer": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "payee": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "capability": "translate.text",
+        "amount": "0.0004",
+        "unit": "USD",
+        "terms_hash": "sha256:VahZNdPG6RU-yNxyvCwRgyGvNeD0ILDrm2NOUb6oYCk",
+        "issued_at": 1754745601987,
+        "issuer": "did:key:z6Mkgxj2R3HLtQRpPnvfvpuKEceSqf3tZHBjdmZ3fFz3JHGG",
+        "settlement": {
+          "at": 1754745690123,
+          "ref": "batch-2026-08-09-0001"
+        },
+        "anchor": null,
+        "sigs": {
+          "payer": "-nRqbpe_bO6p5Y8hJsEVb7YUiACNSiJWsi8gvC-S6Qmg7dCtBcIKFDg8zYIikip56cgOeXgVSqtukOYamoY4CQ",
+          "payee": "DrJ8wQdoxgkpbMM1nz4ty8t7clneh41ehEmmLQUyrmOC57yCsojVPW1CdTicphkxk5kPMRk9NDcmvAi--0eHDg",
+          "issuer": "I1gNEcvbfcC2VsSAHEtGnt6pEatiBW23F5PxZOXmUJB06K09CojSjz6CmfHMbr6EZQexFoq-y7-e8d4UYfBFDQ"
+        }
+      }
+    },
+    {
+      "name": "anchored receipt",
+      "description": "Signatures are byte-identical to the unanchored receipt.",
+      "valid": true,
+      "receipt": {
+        "v": "uip/1",
+        "rid": "01K2R7Y3B8QW5ZM1P4K7DXCVGN",
+        "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "payer": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "payee": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "capability": "translate.text",
+        "amount": "0.0004",
+        "unit": "USD",
+        "terms_hash": "sha256:VahZNdPG6RU-yNxyvCwRgyGvNeD0ILDrm2NOUb6oYCk",
+        "issued_at": 1754745601987,
+        "issuer": "did:key:z6Mkgxj2R3HLtQRpPnvfvpuKEceSqf3tZHBjdmZ3fFz3JHGG",
+        "settlement": null,
+        "anchor": {
+          "log": "https://log.example.com/2026",
+          "index": 918273645,
+          "tree_size": 918273700,
+          "root": "sha384:cTUlgpagDQS0Pm8WFKHEU41BLLzgw1aKL60a_7SdhGLx8sXq-p6k_1mA_yneei3L",
+          "inclusion_proof": [
+            "sha384:VUt1nfiz_rnl39WRU76Bivu3gmtuYB1ogNSj2JiLzD4rs5RVUhD_rElitdDmfFCT",
+            "sha384:yrI0Grch0hLY78-T8dbMOUz7rC76Xu1lpmHmxOQMvr1zJzP5TvntAwaacUQg4Ezd"
+          ]
+        },
+        "sigs": {
+          "payer": "gh74gdICTo-6liIWZLKJmxZsqjQMHYrzaQ2pM6oYglJK2wR5oP5dYF-A7ON52eGCq9k_Cqx6C0ypZL-FU4Z7Bw",
+          "payee": "GgTrn9t9a5KQnJ_kSMkv1YFr4yV9Q-bX20TxHRBY0ohNW558Qv3ion-PjWQrTSTJ4xi_hjOV_FUygTqj0EQVCg",
+          "issuer": "EXnIwMEDm2eHRYczZiwAa6Q69GIlrty6z-C84THDiGkdpruj6R7Dp2s7ccCIifB_dOsa-VuSYsD6M-UO5wWUBg"
+        }
+      }
+    },
+    {
+      "name": "partial receipt without issuer",
+      "valid": false,
+      "code": "UIP_RECEIPT_INCOMPLETE",
+      "receipt": {
+        "v": "uip/1",
+        "rid": "01K2R7Y3B8QW5ZM1P4K7DXCVGN",
+        "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "payer": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "payee": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "capability": "translate.text",
+        "amount": "0.0004",
+        "unit": "USD",
+        "terms_hash": "sha256:VahZNdPG6RU-yNxyvCwRgyGvNeD0ILDrm2NOUb6oYCk",
+        "issued_at": 1754745601987,
+        "issuer": "did:key:z6Mkgxj2R3HLtQRpPnvfvpuKEceSqf3tZHBjdmZ3fFz3JHGG",
+        "settlement": null,
+        "anchor": null,
+        "sigs": {
+          "payer": "gh74gdICTo-6liIWZLKJmxZsqjQMHYrzaQ2pM6oYglJK2wR5oP5dYF-A7ON52eGCq9k_Cqx6C0ypZL-FU4Z7Bw",
+          "payee": "GgTrn9t9a5KQnJ_kSMkv1YFr4yV9Q-bX20TxHRBY0ohNW558Qv3ion-PjWQrTSTJ4xi_hjOV_FUygTqj0EQVCg"
+        }
+      }
+    },
+    {
+      "name": "floating point amount",
+      "valid": false,
+      "code": "UIP_HEADER_MALFORMED",
+      "receipt": {
+        "v": "uip/1",
+        "rid": "01K2R7Y3B8QW5ZM1P4K7DXCVGN",
+        "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "payer": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "payee": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "capability": "translate.text",
+        "amount": 0.0004,
+        "unit": "USD",
+        "terms_hash": "sha256:VahZNdPG6RU-yNxyvCwRgyGvNeD0ILDrm2NOUb6oYCk",
+        "issued_at": 1754745601987,
+        "issuer": "did:key:z6Mkgxj2R3HLtQRpPnvfvpuKEceSqf3tZHBjdmZ3fFz3JHGG",
+        "settlement": null,
+        "anchor": null,
+        "sigs": {
+          "payer": "gh74gdICTo-6liIWZLKJmxZsqjQMHYrzaQ2pM6oYglJK2wR5oP5dYF-A7ON52eGCq9k_Cqx6C0ypZL-FU4Z7Bw",
+          "payee": "GgTrn9t9a5KQnJ_kSMkv1YFr4yV9Q-bX20TxHRBY0ohNW558Qv3ion-PjWQrTSTJ4xi_hjOV_FUygTqj0EQVCg",
+          "issuer": "EXnIwMEDm2eHRYczZiwAa6Q69GIlrty6z-C84THDiGkdpruj6R7Dp2s7ccCIifB_dOsa-VuSYsD6M-UO5wWUBg"
+        }
+      }
+    }
+  ],
+  "issuer_policy": {
+    "description": "Public network policy of section 4.4: an issuer must sign with a suite sound for long-term evidence, because a receipt is permanent evidence and a suite broken in twenty years retroactively forges every receipt issued under it.",
+    "code": "UIP_ISSUER_NOT_ELIGIBLE",
+    "receipt": {
+      "v": "uip/1",
+      "rid": "01K2R7Y3B8QW5ZM1P4K7DXCVGN",
+      "request_id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+      "response_id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+      "payer": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+      "payee": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+      "capability": "translate.text",
+      "amount": "0.0004",
+      "unit": "USD",
+      "terms_hash": "sha256:VahZNdPG6RU-yNxyvCwRgyGvNeD0ILDrm2NOUb6oYCk",
+      "issued_at": 1754745601987,
+      "issuer": "did:key:z6Mkgxj2R3HLtQRpPnvfvpuKEceSqf3tZHBjdmZ3fFz3JHGG",
+      "settlement": null,
+      "anchor": null,
+      "sigs": {
+        "payer": "gh74gdICTo-6liIWZLKJmxZsqjQMHYrzaQ2pM6oYglJK2wR5oP5dYF-A7ON52eGCq9k_Cqx6C0ypZL-FU4Z7Bw",
+        "payee": "GgTrn9t9a5KQnJ_kSMkv1YFr4yV9Q-bX20TxHRBY0ohNW558Qv3ion-PjWQrTSTJ4xi_hjOV_FUygTqj0EQVCg",
+        "issuer": "EXnIwMEDm2eHRYczZiwAa6Q69GIlrty6z-C84THDiGkdpruj6R7Dp2s7ccCIifB_dOsa-VuSYsD6M-UO5wWUBg"
+      }
+    },
+    "issuer_suite": "Ed25519",
+    "issuer_long_term_evidence": false
+  }
+}

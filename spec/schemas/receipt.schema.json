@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uise.dev/schemas/uip-1/receipt.schema.json",
+  "title": "UIP-1 Receipt",
+  "description": "Signed certification of delivered work and the economic obligation it creates. This is the primitive that distinguishes UIP from A2A and MCP, and the reason it lives in the protocol core: a value primitive cannot be added later without splitting the network in two. Unlike an envelope, a receipt is permanent evidence, which is why its issuer must use a post-quantum suite.",
+
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "v", "rid", "request_id", "response_id",
+    "payer", "payee", "capability",
+    "amount", "unit", "terms_hash",
+    "issued_at", "issuer", "settlement", "anchor", "sigs"
+  ],
+
+  "properties": {
+    "v": { "const": "uip/1" },
+    "rid": {
+      "description": "Unique ULID of the receipt.",
+      "$ref": "#/$defs/ulid"
+    },
+    "request_id": {
+      "description": "id of the request envelope. Binds the receipt to work actually requested.",
+      "$ref": "#/$defs/ulid"
+    },
+    "response_id": {
+      "description": "id of the response envelope. Binds the receipt to work actually delivered.",
+      "$ref": "#/$defs/ulid"
+    },
+    "payer": { "$ref": "#/$defs/did" },
+    "payee": { "$ref": "#/$defs/did" },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "amount": {
+      "description": "Exact decimal string. Supports sub-cent amounts without precision loss. Never negative: direction of value is given by payer and payee.",
+      "$ref": "#/$defs/decimalAmount"
+    },
+    "unit": {
+      "description": "ISO 4217 code (USD) or token symbol (USDC).",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]{2,9}$"
+    },
+    "terms_hash": {
+      "description": "Hash of the capability object in force at request time. Makes renegotiating the price after delivery cryptographically impossible.",
+      "$ref": "#/$defs/multihash"
+    },
+    "issued_at": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "issuer": {
+      "description": "DID of the issuer. On the public Uise network this DID MUST use a suite marked for long-term evidence, because the receipt must remain unforgeable for decades.",
+      "$ref": "#/$defs/did"
+    },
+    "settlement": {
+      "description": "null while the obligation is pending.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["at", "ref"],
+          "properties": {
+            "at":  { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "ref": { "type": "string", "minLength": 1, "maxLength": 256 }
+          }
+        }
+      ]
+    },
+    "anchor": {
+      "description": "Transparency-log inclusion proof (RFC 6962 construction). null until logged. Signatures are always computed with anchor set to null, so logging can never alter what the parties agreed to. Merkle proofs rest only on hash functions, so this evidence survives any future break of the signature suite.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["log", "index", "tree_size", "root", "inclusion_proof"],
+          "properties": {
+            "log": { "type": "string", "format": "uri", "maxLength": 2048 },
+            "index": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "tree_size": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+            "root": { "$ref": "#/$defs/multihash" },
+            "inclusion_proof": {
+              "type": "array",
+              "maxItems": 64,
+              "items": { "$ref": "#/$defs/multihash" }
+            }
+          }
+        }
+      ]
+    },
+    "sigs": {
+      "description": "Signatures over UTF8(\"uip/1.receipt\\n\") || JCS(receipt without sigs). A receipt with fewer than three signatures is partial: it proves intent, not obligation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payer", "payee", "issuer"],
+      "properties": {
+        "payer":  { "$ref": "#/$defs/signature" },
+        "payee":  { "$ref": "#/$defs/signature" },
+        "issuer": { "$ref": "#/$defs/signature" }
+      }
+    }
+  },
+
+  "$defs": {
+    "ulid": {
+      "type": "string",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "did": {
+      "type": "string",
+      "pattern": "^did:key:z[1-9A-HJ-NP-Za-km-z]{40,4096}$"
+    },
+    "multihash": {
+      "type": "string",
+      "pattern": "^(sha256:[A-Za-z0-9_-]{43}|sha384:[A-Za-z0-9_-]{64}|sha512:[A-Za-z0-9_-]{86})$"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86,16384}$"
+    },
+    "decimalAmount": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,18})?$"
+    }
+  }
+}

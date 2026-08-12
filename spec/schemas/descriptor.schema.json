@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uise.dev/schemas/uip-1/descriptor.schema.json",
+  "title": "UIP-1 Capability Descriptor",
+  "description": "Machine-readable declaration of what an agent can do, at what price, under what SLA. Carried as the body of an announce envelope with content_type application/uip-descriptor+json. Its authenticity comes from the enclosing envelope signature; it carries no signature of its own.",
+
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "agent", "name", "capabilities", "endpoints"],
+
+  "properties": {
+    "v": { "const": "uip/1" },
+    "agent": {
+      "description": "DID of the described agent. MUST equal the from field of the enclosing envelope.",
+      "$ref": "#/$defs/did"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2048
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "endpoints": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/endpoint" }
+    },
+    "expires": {
+      "description": "Epoch ms after which the descriptor must not be considered in force.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "input_schema", "output_schema"],
+      "properties": {
+        "id": {
+          "description": "Capability identifier in dot-separated segments.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$",
+          "maxLength": 128
+        },
+        "description": { "type": "string", "maxLength": 1024 },
+        "input_schema": {
+          "description": "JSON Schema draft 2020-12 for the request. A foreign agent MUST be able to validate against it with no prior knowledge.",
+          "type": "object"
+        },
+        "output_schema": {
+          "description": "JSON Schema draft 2020-12 for the response.",
+          "type": "object"
+        },
+        "price": {
+          "description": "A price offer, not a contract. The contract is formed by the receipt. Absence means free.",
+          "$ref": "#/$defs/price"
+        },
+        "sla": { "$ref": "#/$defs/sla" },
+        "x": {
+          "description": "Extensions, keyed by reverse namespace. Used by bridges to preserve identifiers that do not survive translation, so a round trip through MCP or A2A returns the original document unchanged. Receivers MUST ignore keys they do not recognize.",
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" }
+        }
+      }
+    },
+    "price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "unit", "per"],
+      "properties": {
+        "amount": { "$ref": "#/$defs/decimalAmount" },
+        "unit":   { "$ref": "#/$defs/unit" },
+        "per":    { "enum": ["call", "token", "second", "byte"] }
+      }
+    },
+    "sla": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "p95_ms": { "type": "integer", "minimum": 1 },
+        "availability": {
+          "description": "Decimal fraction as a string, e.g. \"0.9999\".",
+          "type": "string",
+          "pattern": "^0\\.[0-9]{1,6}$|^1(\\.0{1,6})?$"
+        }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "url"],
+      "properties": {
+        "transport": { "enum": ["https", "nats", "grpc"] },
+        "url": { "type": "string", "format": "uri", "maxLength": 2048 }
+      },
+      "allOf": [
+        {
+          "description": "The HTTPS binding is mandatory for every conforming implementation and requires TLS.",
+          "if":   { "properties": { "transport": { "const": "https" } }, "required": ["transport"] },
+          "then": { "properties": { "url": { "pattern": "^https://" } } }
+        }
+      ]
+    },
+    "decimalAmount": {
+      "description": "Exact decimal string. Never a JSON number: binary floating point for money is a conformance defect.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,18})?$"
+    },
+    "unit": {
+      "description": "ISO 4217 code (USD) or token symbol (USDC).",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]{2,9}$"
+    },
+    "did": {
+      "type": "string",
+      "pattern": "^did:key:z[1-9A-HJ-NP-Za-km-z]{40,4096}$"
+    }
+  }
+}

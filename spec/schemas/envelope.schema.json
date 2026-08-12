@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uise.dev/schemas/uip-1/envelope.schema.json",
+  "title": "UIP-1 Envelope Header",
+  "description": "Signed header of a UIP-1 envelope. This is the only structure canonicalized with JCS (RFC 8785) before signing. The envelope body is not part of this schema: it is authenticated through body_hash.",
+
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "from", "type", "ts", "ttl", "content_type", "body_hash", "sig"],
+
+  "properties": {
+    "v": {
+      "description": "Protocol version. Frozen at uip/1. A new cryptographic algorithm never changes this value.",
+      "const": "uip/1"
+    },
+    "id": {
+      "description": "Unique ULID of the envelope, Crockford base32, time-ordered.",
+      "$ref": "#/$defs/ulid"
+    },
+    "from": {
+      "description": "DID of the signer. Its multicodec prefix fully determines the signature suite.",
+      "$ref": "#/$defs/did"
+    },
+    "to": {
+      "description": "DID of the recipient. Absence means broadcast and is valid only with type=announce.",
+      "$ref": "#/$defs/did"
+    },
+    "type": {
+      "description": "Message type (spec section 8).",
+      "enum": ["announce", "request", "response", "event", "stream", "receipt", "error"]
+    },
+    "ts": {
+      "description": "Milliseconds since the UTC epoch at signing time.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "ttl": {
+      "description": "Validity in milliseconds from ts. Bounded to 24 h so the replay store stays bounded.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 86400000
+    },
+    "content_type": {
+      "description": "Media type of the body (RFC 6838), or application/octet-stream when opaque.",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 255
+    },
+    "body_hash": {
+      "description": "Hash of the body. An absent body hashes the empty string.",
+      "$ref": "#/$defs/multihash"
+    },
+    "corr": {
+      "description": "id of the correlated envelope. Required for response and stream.",
+      "$ref": "#/$defs/ulid"
+    },
+    "x": {
+      "description": "Extensions, keyed by reverse namespace. Covered by the signature. Receivers MUST ignore unrecognized keys. This is the only growth point of the header.",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" }
+    },
+    "sig": {
+      "description": "Signature over UTF8(\"uip/1.envelope\\n\") || JCS(header without sig), base64url unpadded. Length varies by suite and MUST NOT be assumed: Ed25519 is 86 characters, a composite post-quantum signature is several thousand.",
+      "$ref": "#/$defs/signature"
+    }
+  },
+
+  "allOf": [
+    {
+      "description": "Every type except announce requires a recipient.",
+      "if":   { "properties": { "type": { "not": { "const": "announce" } } } },
+      "then": { "required": ["to"] }
+    },
+    {
+      "description": "response and stream must correlate with the originating request.",
+      "if":   { "properties": { "type": { "enum": ["response", "stream"] } }, "required": ["type"] },
+      "then": { "required": ["corr"] }
+    }
+  ],
+
+  "$defs": {
+    "ulid": {
+      "type": "string",
+      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "did": {
+      "description": "did:key in multibase base58btc. The length range spans Ed25519 through post-quantum public keys; the multicodec prefix inside identifies the suite.",
+      "type": "string",
+      "pattern": "^did:key:z[1-9A-HJ-NP-Za-km-z]{40,4096}$"
+    },
+    "multihash": {
+      "description": "Registered hash algorithm prefix followed by the digest in base64url unpadded: sha256 (43 chars), sha384 (64), sha512 (86).",
+      "type": "string",
+      "pattern": "^(sha256:[A-Za-z0-9_-]{43}|sha384:[A-Za-z0-9_-]{64}|sha512:[A-Za-z0-9_-]{86})$"
+    },
+    "signature": {
+      "description": "base64url unpadded. Lower bound is Ed25519 (64 bytes); upper bound accommodates SLH-DSA (7856 bytes).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86,16384}$"
+    }
+  }
+}

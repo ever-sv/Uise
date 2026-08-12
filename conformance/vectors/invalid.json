@@ -1,0 +1,270 @@
+{
+  "spec": "UIP-1 sections 7.4 and 12 - Verification and errors",
+  "note": "These are the most important vectors in the standard: they define what every implementation MUST reject. Accepting any of them is a conformance failure.",
+  "reference_body_utf8": "{\"text\":\"Hola mundo\",\"from\":\"es\",\"to\":\"en\"}",
+  "cases": [
+    {
+      "name": "unsupported version",
+      "description": "A receiver must be able to reject without parsing the rest.",
+      "code": "UIP_VERSION_UNSUPPORTED",
+      "header": {
+        "v": "uip/2",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "unknown root field",
+      "description": "The root is closed; extensions belong in `x`.",
+      "code": "UIP_HEADER_MALFORMED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw",
+        "priority": "high"
+      }
+    },
+    {
+      "name": "missing recipient",
+      "description": "Only `announce` may omit `to`.",
+      "code": "UIP_HEADER_MALFORMED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "response without correlation",
+      "description": "`response` and `stream` must reference the request.",
+      "code": "UIP_HEADER_MALFORMED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "from": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "to": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "type": "response",
+        "ts": 1754745600535,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:atbx1Uf4ybQny9ENYejHvDHP9Wm7qNqyeagnBp92m2Y",
+        "sig": "v1Ctb45wGtabzSOyNOk4wEyhge_anXBBX84t1iDAo0MdysyPKeAVqqWCGD1n4v1A6OgIyWZ9r7hhPxwsD90lBQ"
+      }
+    },
+    {
+      "name": "id is not a ulid",
+      "description": "The identifier must be a time-ordered ULID.",
+      "code": "UIP_HEADER_MALFORMED",
+      "header": {
+        "v": "uip/1",
+        "id": "not-a-valid-ulid-xxxx",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "ttl out of range",
+      "description": "24 h maximum; it bounds the replay store.",
+      "code": "UIP_HEADER_MALFORMED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 86400001,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "malformed sender did",
+      "description": "`from` must parse as a did:key.",
+      "code": "UIP_DID_INVALID",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:zNotAValidKey",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "unsupported signature suite",
+      "description": "Well formed DID, unknown algorithm. Never fall back to another.",
+      "code": "UIP_SUITE_UNSUPPORTED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z2wkBD9HJfAez8cFsYfYve5rAr2PNAr9rYf9B9aa1R5ubjMHZP5",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "unregistered hash algorithm",
+      "description": "Signature is valid; the digest algorithm is not registered.",
+      "code": "UIP_HASH_UNSUPPORTED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "blake3:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "sig": "jviUVmlj3GfFzL8jbcaCdjBQ0Cs3AO4u8cTu4APrK4lPIeupA0yoa0Z27E7E6YI4NIuH0DDRIzopJJf4Cx7SCw"
+      }
+    },
+    {
+      "name": "tampered signature",
+      "description": "A single differing bit invalidates the signature.",
+      "code": "UIP_SIG_INVALID",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "A-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "tampered body hash",
+      "description": "Mutating any field breaks the signature: no field is editable.",
+      "code": "UIP_SIG_INVALID",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:nZ1WBRtzRLhp5UqOzr8bOfIf4kSSIrvdE16aYIshZzg",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      }
+    },
+    {
+      "name": "expired envelope",
+      "description": "now > ts + ttl.",
+      "code": "UIP_EXPIRED",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      },
+      "now_ms": 1754745630124
+    },
+    {
+      "name": "clock skew",
+      "description": "ts outside the plus/minus 300 s window.",
+      "code": "UIP_CLOCK_SKEW",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      },
+      "now_ms": 1754745900124
+    },
+    {
+      "name": "replay",
+      "description": "The same id was already received inside the window.",
+      "code": "UIP_REPLAY",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      },
+      "now_ms": 1754745600123,
+      "seen_ids": [
+        "01K2R7XQ4M8YVZ3B9N0C6TFHJD"
+      ]
+    },
+    {
+      "name": "body does not match",
+      "description": "Signature is valid but the delivered body is not the signed one.",
+      "code": "UIP_BODY_HASH_MISMATCH",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      },
+      "now_ms": 1754745600123,
+      "body_utf8": "substituted content"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "spec": "UIP-1 section 5 - Canonical encoding (JCS, RFC 8785)",
+  "note": "If two implementations canonicalize differently their signatures stop validating against each other and the failure is silent. These bytes are normative.",
+  "cases": [
+    {
+      "name": "key ordering",
+      "input": {
+        "b": 1,
+        "a": 2,
+        "C": 3
+      },
+      "canonical": "{\"C\":3,\"a\":2,\"b\":1}",
+      "canonical_hex": "7b2243223a332c2261223a322c2262223a317d",
+      "sha256": "sha256:J-AcJnQwhb_45KmNdtypPr22yAX4E2-uEhbuJX0z9cU"
+    },
+    {
+      "name": "nesting",
+      "input": {
+        "z": {
+          "b": [
+            1,
+            2,
+            3
+          ],
+          "a": null
+        },
+        "a": true
+      },
+      "canonical": "{\"a\":true,\"z\":{\"a\":null,\"b\":[1,2,3]}}",
+      "canonical_hex": "7b2261223a747275652c227a223a7b2261223a6e756c6c2c2262223a5b312c322c335d7d7d",
+      "sha256": "sha256:FL5b8ibohAFioMDNQ2yCbeUFnuOyPKq-6CRIAUU205Q"
+    },
+    {
+      "name": "mandatory escapes",
+      "input": {
+        "s": "line1\nline2\t\"quotes\"\\backslash"
+      },
+      "canonical": "{\"s\":\"line1\\nline2\\t\\\"quotes\\\"\\\\backslash\"}",
+      "canonical_hex": "7b2273223a226c696e65315c6e6c696e65325c745c2271756f7465735c225c5c6261636b736c617368227d",
+      "sha256": "sha256:UGGutm-y6ACHOHjgxh8QisjXobzEr3QuvdnIfo0X8pA"
+    },
+    {
+      "name": "non printable controls",
+      "input": {
+        "s": "\u0000\u001f end"
+      },
+      "canonical": "{\"s\":\"\\u0000\\u001f end\"}",
+      "canonical_hex": "7b2273223a225c75303030305c753030316620656e64227d",
+      "sha256": "sha256:VDB-xHgt9Xbver8n74BgA0EAUDWHCpLe_WrTd_ybOkQ"
+    },
+    {
+      "name": "literal non ascii",
+      "input": {
+        "ñ": "año",
+        "a": "€"
+      },
+      "canonical": "{\"a\":\"€\",\"ñ\":\"año\"}",
+      "canonical_hex": "7b2261223a22e282ac222c22c3b1223a2261c3b16f227d",
+      "sha256": "sha256:4mnkOAfsMdYkttU8uu6rEVGahdLRythQKKi5FfUOVcI"
+    },
+    {
+      "name": "utf-16 ordering",
+      "input": {
+        "😀": 1,
+        "￿": 2
+      },
+      "canonical": "{\"😀\":1,\"￿\":2}",
+      "canonical_hex": "7b22f09f9880223a312c22efbfbf223a327d",
+      "sha256": "sha256:xrG5a2GNi-R183n-acZka0TXpdPAFjDENQlWLwnRAks"
+    },
+    {
+      "name": "integer boundary",
+      "input": {
+        "n": 9007199254740991
+      },
+      "canonical": "{\"n\":9007199254740991}",
+      "canonical_hex": "7b226e223a393030373139393235343734303939317d",
+      "sha256": "sha256:4dpIxqYInwbstOCiJZ5ljjeGskIPUrrM35KexkYNe0E"
+    },
+    {
+      "name": "empty array and object",
+      "input": {
+        "a": [],
+        "o": {}
+      },
+      "canonical": "{\"a\":[],\"o\":{}}",
+      "canonical_hex": "7b2261223a5b5d2c226f223a7b7d7d",
+      "sha256": "sha256:m-5-v8lLRZ2suMvHLLKQDmHwqkIYnfGDKfhPklaPT4k"
+    }
+  ]
+}

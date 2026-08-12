@@ -1,0 +1,114 @@
+{
+  "spec": "UIP-1 section 7 - The envelope",
+  "note": "`signing_input_hex` is exactly what gets signed: the domain separator followed by JCS(header without sig). An implementation producing any other bytes is not Uise.",
+  "cases": [
+    {
+      "name": "request",
+      "description": "Work request with a JSON body.",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "request",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+        "sig": "6-6bQHBBMeqYF9moQTsWIhRtbhzjfu_qeQ3m7srmnsQQifdWwW9PAkdgrX8FmAqhy_qs4v8Qxns3XDGusevCAw"
+      },
+      "body_utf8": "{\"text\":\"Hola mundo\",\"from\":\"es\",\"to\":\"en\"}",
+      "body_hash": "sha256:vWBVPjUMbz0OKfsqfFkv2r0HPbfzddbi8mofpXA4Mu8",
+      "signing_input_hex": "7569702f312e656e76656c6f70650a7b22626f64795f68617368223a227368613235363a76574256506a554d627a304f4b66737166466b76327230485062667a64646269386d6f66705841344d7538222c22636f6e74656e745f74797065223a226170706c69636174696f6e2f6a736f6e222c2266726f6d223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c226964223a2230314b3252375851344d3859565a3342394e3043365446484a44222c22746f223a226469643a6b65793a7a364d6b684677584e46576f734c6575677653663477634c39743375755258756547534654526753764868576a354732222c227473223a313735343734353630303132332c2274746c223a33303030302c2274797065223a2272657175657374222c2276223a227569702f31227d",
+      "signing_input_sha256": "19898a90d9e6dea4e5b1f4420b82c0b724a2bcb3b93e3496c2583d376f54eb3a",
+      "now_ms": 1754745600123
+    },
+    {
+      "name": "response",
+      "description": "Response correlated with the request.",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XZ7C2GHNQ8T5R1WYBMKA",
+        "from": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "to": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "type": "response",
+        "ts": 1754745600535,
+        "ttl": 30000,
+        "content_type": "application/json",
+        "body_hash": "sha256:atbx1Uf4ybQny9ENYejHvDHP9Wm7qNqyeagnBp92m2Y",
+        "corr": "01K2R7XQ4M8YVZ3B9N0C6TFHJD",
+        "sig": "v1Ctb45wGtabzSOyNOk4wEyhge_anXBBX84t1iDAo0MdysyPKeAVqqWCGD1n4v1A6OgIyWZ9r7hhPxwsD90lBQ"
+      },
+      "body_utf8": "{\"text\":\"Hello world\"}",
+      "body_hash": "sha256:atbx1Uf4ybQny9ENYejHvDHP9Wm7qNqyeagnBp92m2Y",
+      "signing_input_hex": "7569702f312e656e76656c6f70650a7b22626f64795f68617368223a227368613235363a61746278315566347962516e7939454e59656a487644485039576d37714e71796561676e427039326d3259222c22636f6e74656e745f74797065223a226170706c69636174696f6e2f6a736f6e222c22636f7272223a2230314b3252375851344d3859565a3342394e3043365446484a44222c2266726f6d223a226469643a6b65793a7a364d6b684677584e46576f734c6575677653663477634c39743375755258756547534654526753764868576a354732222c226964223a2230314b325237585a37433247484e5138543552315759424d4b41222c22746f223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c227473223a313735343734353630303533352c2274746c223a33303030302c2274797065223a22726573706f6e7365222c2276223a227569702f31227d",
+      "signing_input_sha256": "6984601575bedfb67179ab383f07eae7e8263607a6208ce8d35e321d1d83f488",
+      "now_ms": 1754745600123
+    },
+    {
+      "name": "announce",
+      "description": "Descriptor publication; the only type without `to`.",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XB1D3EFGHJ0K5M7N9PQR",
+        "from": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "announce",
+        "ts": 1754745595123,
+        "ttl": 3600000,
+        "content_type": "application/uip-descriptor+json",
+        "body_hash": "sha256:4S21YcbtgyI7VX3w7SLy4tZmh7hCNUor0VF2Ur29fpI",
+        "sig": "zXeoeg6OZnbiXyCvNMLaMUAeMZFj1q2o_PrPwstmDvTHhsaPX4YDSUFuw3laKQ4KMZw_I0zfkOM-tUUeFUSpCQ"
+      },
+      "body_utf8": "{\"agent\":\"did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2\",\"capabilities\":[{\"description\":\"Translates a text between two languages.\",\"id\":\"translate.text\",\"input_schema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"output_schema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\"},\"price\":{\"amount\":\"0.0004\",\"per\":\"call\",\"unit\":\"USD\"}}],\"endpoints\":[{\"transport\":\"https\",\"url\":\"https://bob.example.com/uip/v1\"}],\"name\":\"text-translator\",\"v\":\"uip/1\"}",
+      "body_hash": "sha256:4S21YcbtgyI7VX3w7SLy4tZmh7hCNUor0VF2Ur29fpI",
+      "signing_input_hex": "7569702f312e656e76656c6f70650a7b22626f64795f68617368223a227368613235363a3453323159636274677949375658337737534c7934745a6d683768434e556f723056463255723239667049222c22636f6e74656e745f74797065223a226170706c69636174696f6e2f7569702d64657363726970746f722b6a736f6e222c2266726f6d223a226469643a6b65793a7a364d6b684677584e46576f734c6575677653663477634c39743375755258756547534654526753764868576a354732222c226964223a2230314b3252375842314433454647484a304b354d374e39505152222c227473223a313735343734353539353132332c2274746c223a333630303030302c2274797065223a22616e6e6f756e6365222c2276223a227569702f31227d",
+      "signing_input_sha256": "686f3adf1306f2c9daff42f3713555c2b2a198b3f2adff0ab7de0debb3bf5290",
+      "now_ms": 1754745600123
+    },
+    {
+      "name": "event with extension",
+      "description": "The `x` object is covered by the signature.",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7Y5C9RXPZQ2T6V8WXYZAB",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "event",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/octet-stream",
+        "body_hash": "sha256:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "x": {
+          "com.example.tracing": "abc-123"
+        },
+        "sig": "aZ4GhDTzy9OAsvpYTKMIqUyhJIUIMXycqi-U7dVc4kHIUBPs7AZiHQRt85zelGETlahZ6xo38Ly4oos6J6s0Aw"
+      },
+      "body_utf8": "",
+      "body_hash": "sha256:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+      "signing_input_hex": "7569702f312e656e76656c6f70650a7b22626f64795f68617368223a227368613235363a3437444551706a38484253612d5f54496d572d354a4365755165526b6d354e4d704a575a47336853754655222c22636f6e74656e745f74797065223a226170706c69636174696f6e2f6f637465742d73747265616d222c2266726f6d223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c226964223a2230314b325237593543395258505a5132543656385758595a4142222c22746f223a226469643a6b65793a7a364d6b684677584e46576f734c6575677653663477634c39743375755258756547534654526753764868576a354732222c227473223a313735343734353630303132332c2274746c223a33303030302c2274797065223a226576656e74222c2276223a227569702f31222c2278223a7b22636f6d2e6578616d706c652e74726163696e67223a226162632d313233227d7d",
+      "signing_input_sha256": "4e2a36b1acbae7000943b1f0c373165cadcfbda0faa65883fa833def8d127ce4",
+      "now_ms": 1754745600123
+    },
+    {
+      "name": "sha384 body hash",
+      "description": "Hash agility, same header shape.",
+      "header": {
+        "v": "uip/1",
+        "id": "01K2R7XD2E4FGHJK1M6N8P0QRS",
+        "from": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+        "to": "did:key:z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+        "type": "event",
+        "ts": 1754745600123,
+        "ttl": 30000,
+        "content_type": "application/octet-stream",
+        "body_hash": "sha384:3wCHVLYkXjk7piZI0ThEfhVu6kO6Akzf9a1rYyQatRsFqCObT1PT04I8T1CKikoT",
+        "sig": "Fev06_qo00crRmg8q3Q2I-jxkw4uFZY2ToFtjUx0gXg5LKoAf1zhURzK5FwgkspSz7nYDD1NKL2C0WmqwHi9AA"
+      },
+      "body_utf8": "stronger digest",
+      "body_hash": "sha384:3wCHVLYkXjk7piZI0ThEfhVu6kO6Akzf9a1rYyQatRsFqCObT1PT04I8T1CKikoT",
+      "signing_input_hex": "7569702f312e656e76656c6f70650a7b22626f64795f68617368223a227368613338343a33774348564c596b586a6b3770695a493054684566685675366b4f36416b7a6639613172597951617452734671434f6254315054303449385431434b696b6f54222c22636f6e74656e745f74797065223a226170706c69636174696f6e2f6f637465742d73747265616d222c2266726f6d223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c226964223a2230314b32523758443245344647484a4b314d364e385030515253222c22746f223a226469643a6b65793a7a364d6b684677584e46576f734c6575677653663477634c39743375755258756547534654526753764868576a354732222c227473223a313735343734353630303132332c2274746c223a33303030302c2274797065223a226576656e74222c2276223a227569702f31227d",
+      "signing_input_sha256": "17efd509ab9024791b1decf28da9b0ec17e8db8dbbf9895ac353afa36ac93d47",
+      "now_ms": 1754745600123
+    }
+  ]
+}

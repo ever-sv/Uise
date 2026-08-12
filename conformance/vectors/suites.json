@@ -1,0 +1,15 @@
+{
+  "spec": "UIP-1 section 4 - Cryptographic suites and agility",
+  "note": "The envelope never names an algorithm. The multicodec prefix inside the sender DID does. Adding a post-quantum algorithm therefore adds a registry entry and a new DID, never a new protocol version.",
+  "implemented": [
+    {
+      "name": "Ed25519",
+      "multicodec": "0xed",
+      "public_key_size": 32,
+      "signature_size": 64,
+      "long_term_evidence": false
+    }
+  ],
+  "unknown_suite_did": "did:key:z2wkBD9HJfAez8cFsYfYve5rAr2PNAr9rYf9B9aa1R5ubjMHZP5",
+  "unknown_suite_note": "MUST be rejected with UIP_SUITE_UNSUPPORTED. An implementation MUST NOT fall back to another algorithm: a fallback is a downgrade attack."
+}
