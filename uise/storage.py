@@ -51,8 +51,13 @@ CREATE TABLE IF NOT EXISTS usage_daily (
     PRIMARY KEY (day, unit)
 );
 
+-- An account is what a balance belongs to. Its identifier is either an agent's
+-- DID, or an organization id when several agents share one balance. A solo
+-- agent is simply an organization of one, so nothing downstream needs to know
+-- which it is dealing with.
 CREATE TABLE IF NOT EXISTS accounts (
-    did          TEXT PRIMARY KEY,
+    account_id   TEXT PRIMARY KEY,
+    kind         TEXT NOT NULL,
     label        TEXT NOT NULL,
     rail         TEXT NOT NULL,
     rail_ref     TEXT,
@@ -62,9 +67,18 @@ CREATE TABLE IF NOT EXISTS accounts (
     created_at   INTEGER NOT NULL
 );
 
+-- Which account an agent bills to. An agent with no row here bills to itself.
+CREATE TABLE IF NOT EXISTS memberships (
+    did        TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    joined_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS memberships_by_account ON memberships (account_id);
+
 CREATE TABLE IF NOT EXISTS credit_ledger (
     seq        INTEGER PRIMARY KEY AUTOINCREMENT,
-    did        TEXT NOT NULL,
+    account_id TEXT NOT NULL,
     unit       TEXT NOT NULL,
     delta      TEXT NOT NULL,
     kind       TEXT NOT NULL,
@@ -72,14 +86,14 @@ CREATE TABLE IF NOT EXISTS credit_ledger (
     created_at INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS credit_ledger_by_account ON credit_ledger (did, unit, seq);
+CREATE INDEX IF NOT EXISTS credit_ledger_by_account ON credit_ledger (account_id, unit, seq);
 
 CREATE TABLE IF NOT EXISTS balances (
-    did        TEXT NOT NULL,
+    account_id TEXT NOT NULL,
     unit       TEXT NOT NULL,
     amount     TEXT NOT NULL,
     updated_at INTEGER NOT NULL,
-    PRIMARY KEY (did, unit)
+    PRIMARY KEY (account_id, unit)
 );
 
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -127,12 +141,12 @@ class InsufficientCredit(Exception):
     under concurrency.
     """
 
-    def __init__(self, did, unit, balance, charge, limit):
+    def __init__(self, account, unit, balance, charge, limit):
         super(InsufficientCredit, self).__init__(
             "%s has %s %s and a limit of %s; cannot absorb %s"
-            % (did, balance, unit, limit, charge)
+            % (account, balance, unit, limit, charge)
         )
-        self.did = did
+        self.account = account
         self.unit = unit
         self.balance = balance
         self.charge = charge
@@ -241,7 +255,7 @@ class Storage(object):
     # `recompute_balance` exists to prove the two agree: a stored total that can
     # silently drift from its ledger is how money bugs survive for years.
 
-    def _charge(self, did, unit, delta, kind, reference, now_ms, credit_limit=None):
+    def _charge(self, account, unit, delta, kind, reference, now_ms, credit_limit=None):
         """
         Apply a signed movement inside the caller's transaction.
 
@@ -250,57 +264,59 @@ class Storage(object):
         balance check and then both charge.
         """
         row = self._db.execute(
-            "SELECT amount FROM balances WHERE did = ? AND unit = ?", (did, unit)
+            "SELECT amount FROM balances WHERE account_id = ? AND unit = ?", (account, unit)
         ).fetchone()
         current = Decimal(row["amount"]) if row else Decimal(0)
         updated = current + delta
 
         if credit_limit is not None and updated < -Decimal(credit_limit):
-            raise InsufficientCredit(did, unit, current, -delta, credit_limit)
+            raise InsufficientCredit(account, unit, current, -delta, credit_limit)
 
         self._db.execute(
-            "INSERT INTO credit_ledger (did, unit, delta, kind, reference, created_at)"
+            "INSERT INTO credit_ledger (account_id, unit, delta, kind, reference, created_at)"
             " VALUES (?, ?, ?, ?, ?, ?)",
-            (did, unit, str(delta), kind, reference, now_ms),
+            (account, unit, str(delta), kind, reference, now_ms),
         )
         self._db.execute(
-            "INSERT INTO balances (did, unit, amount, updated_at) VALUES (?, ?, ?, ?)"
-            " ON CONFLICT(did, unit) DO UPDATE SET"
+            "INSERT INTO balances (account_id, unit, amount, updated_at) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT(account_id, unit) DO UPDATE SET"
             " amount=excluded.amount, updated_at=excluded.updated_at",
-            (did, unit, str(updated), now_ms),
+            (account, unit, str(updated), now_ms),
         )
         return updated
 
-    def apply_credit(self, did, unit, delta, kind, reference, now_ms, credit_limit=None):
+    def apply_credit(self, account, unit, delta, kind, reference, now_ms, credit_limit=None):
         """Standalone movement - a deposit, a refund, or a manual adjustment."""
         with self._db:
-            return self._charge(did, unit, delta, kind, reference, now_ms, credit_limit)
+            return self._charge(account, unit, delta, kind, reference, now_ms, credit_limit)
 
-    def balance(self, did, unit):
+    def balance(self, account, unit):
         row = self._db.execute(
-            "SELECT amount FROM balances WHERE did = ? AND unit = ?", (did, unit)
+            "SELECT amount FROM balances WHERE account_id = ? AND unit = ?", (account, unit)
         ).fetchone()
         return Decimal(row["amount"]) if row else Decimal(0)
 
-    def recompute_balance(self, did, unit):
+    def recompute_balance(self, account, unit):
         """Re-add the ledger from scratch. Used to audit the materialized total."""
         rows = self._db.execute(
-            "SELECT delta FROM credit_ledger WHERE did = ? AND unit = ?", (did, unit)
+            "SELECT delta FROM credit_ledger WHERE account_id = ? AND unit = ?",
+            (account, unit),
         ).fetchall()
         return sum((Decimal(row["delta"]) for row in rows), Decimal(0))
 
-    def ledger(self, did, unit, limit=100):
+    def ledger(self, account, unit, limit=100):
         rows = self._db.execute(
             "SELECT seq, delta, kind, reference, created_at FROM credit_ledger"
-            " WHERE did = ? AND unit = ? ORDER BY seq DESC LIMIT ?",
-            (did, unit, limit),
+            " WHERE account_id = ? AND unit = ? ORDER BY seq DESC LIMIT ?",
+            (account, unit, limit),
         ).fetchall()
         return [dict(row) for row in rows]
 
     def balances(self):
         rows = self._db.execute(
-            "SELECT b.did, b.unit, b.amount, b.updated_at, a.label, a.credit_limit"
-            " FROM balances b LEFT JOIN accounts a ON a.did = b.did"
+            "SELECT b.account_id, b.unit, b.amount, b.updated_at,"
+            " a.label, a.credit_limit, a.kind"
+            " FROM balances b LEFT JOIN accounts a ON a.account_id = b.account_id"
             " ORDER BY b.updated_at DESC"
         ).fetchall()
         return [dict(row) for row in rows]
@@ -422,24 +438,74 @@ class Storage(object):
 
     # -- accounts ------------------------------------------------------------ #
 
-    def upsert_account(self, did, label, rail, rail_ref, created_at, credit_limit=None):
+    def upsert_account(self, account, label, rail, rail_ref, created_at,
+                       credit_limit=None, kind="agent"):
         with self._db:
             self._db.execute(
-                "INSERT INTO accounts (did, label, rail, rail_ref, credit_limit, created_at)"
-                " VALUES (?, ?, ?, ?, ?, ?)"
-                " ON CONFLICT(did) DO UPDATE SET"
+                "INSERT INTO accounts"
+                " (account_id, kind, label, rail, rail_ref, credit_limit, created_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)"
+                " ON CONFLICT(account_id) DO UPDATE SET"
                 " label=excluded.label, rail=excluded.rail, rail_ref=excluded.rail_ref,"
                 " credit_limit=excluded.credit_limit",
-                (did, label, rail, rail_ref,
+                (account, kind, label, rail, rail_ref,
                  None if credit_limit is None else str(credit_limit), created_at),
             )
 
-    def account(self, did):
-        row = self._db.execute("SELECT * FROM accounts WHERE did = ?", (did,)).fetchone()
+    def account(self, account):
+        row = self._db.execute(
+            "SELECT * FROM accounts WHERE account_id = ?", (account,)
+        ).fetchone()
         return dict(row) if row else None
 
-    def accounts(self):
-        rows = self._db.execute("SELECT * FROM accounts ORDER BY created_at")
+    def accounts(self, kind=None):
+        if kind is None:
+            rows = self._db.execute("SELECT * FROM accounts ORDER BY created_at")
+        else:
+            rows = self._db.execute(
+                "SELECT * FROM accounts WHERE kind = ? ORDER BY created_at", (kind,)
+            )
+        return [dict(row) for row in rows]
+
+    # -- membership ---------------------------------------------------------- #
+
+    def billing_account(self, did):
+        """
+        Which account an agent bills to.
+
+        An agent with no membership bills to itself, so a solo agent and a member
+        of a thousand-agent organization take exactly the same code path.
+        """
+        row = self._db.execute(
+            "SELECT account_id FROM memberships WHERE did = ?", (did,)
+        ).fetchone()
+        return row["account_id"] if row else did
+
+    def add_membership(self, did, account, joined_at):
+        with self._db:
+            self._db.execute(
+                "INSERT INTO memberships (did, account_id, joined_at) VALUES (?, ?, ?)"
+                " ON CONFLICT(did) DO UPDATE SET"
+                " account_id=excluded.account_id, joined_at=excluded.joined_at",
+                (did, account, joined_at),
+            )
+
+    def remove_membership(self, did):
+        with self._db:
+            cursor = self._db.execute("DELETE FROM memberships WHERE did = ?", (did,))
+            return cursor.rowcount > 0
+
+    def membership(self, did):
+        row = self._db.execute(
+            "SELECT * FROM memberships WHERE did = ?", (did,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def members(self, account):
+        rows = self._db.execute(
+            "SELECT did, joined_at FROM memberships WHERE account_id = ?"
+            " ORDER BY joined_at", (account,),
+        )
         return [dict(row) for row in rows]
 
     # -- api credentials ----------------------------------------------------- #

@@ -215,6 +215,20 @@ One mechanism covers three models: unmetered (launch phase — free, but recorde
 strictly prepaid (agents), and a credit limit (organizations, where the negative balance *is* the
 invoice).
 
+**A company running a thousand agents funds one balance, not a thousand.** An account is either an
+agent's own DID or an organization shared by many — a solo agent is an organization of one, so
+nothing downstream needs to know which it is looking at.
+
+Membership requires consent from **both** sides, and neither is trusted to assert it alone. The
+organization proves consent by holding a `write` credential — it is taking on the cost. The agent
+proves consent by **signing**, because joining can harm it too: one with its own funded balance
+would start drawing on an account that may have none. An attestation is valid for five minutes: it
+is a statement about now, not a standing permission, so a stale copy cannot re-enrol an agent that
+has since left.
+
+Leaving restores the agent's own balance, untouched. **Money is never moved implicitly**, in either
+direction.
+
 A deposit **records that money arrived; it never receives money.** The node holds no payment
 credentials. The charge and its log entry are one transaction: a receipt is never issued without
 being paid for, and never charged without being issued.
@@ -237,7 +251,9 @@ GET    /api/v1/openapi.json               the machine-readable contract
 GET    /api/v1/events                     live stream, Server-Sent Events
 GET    /api/v1/stats                      metrics
 GET    /api/v1/receipts?after=&limit=     cursor pagination
-GET    /api/v1/accounts/{did}/ledger      every movement, with its cause
+GET    /api/v1/accounts/{account}/ledger  every movement, with its cause
+POST   /api/v1/organizations              one balance, many agents
+POST   /api/v1/organizations/{id}/members enrol an agent, with its signed consent
 POST   /api/v1/keys                       mint a credential; shown once
 DELETE /api/v1/keys/{key_id}              revoke, immediately
 ```
@@ -268,7 +284,7 @@ API. If the console needs something the API cannot provide, the API is incomplet
 | `conformance/` | **The operative definition of the protocol** | **none** |
 | `uip/` | Protocol core: canonicalization, DIDs, envelopes, receipts | **none** |
 | `uise/` | SDK, node, credits, API, events, console, bridges | `cryptography` |
-| `tests/` | 244 tests | `pytest` |
+| `tests/` | 269 tests | `pytest` |
 | `demo.py` · `demo_node.py` | Both planes, working | — |
 
 `uip/` and `uise/` are one implementation, not two: the SDK registers stronger cryptography into
@@ -306,7 +322,7 @@ it does not. There is no grey area.
 UIP-1 is a normative draft. The envelope's root fields are frozen. Provisional post-quantum
 codepoints must be replaced with assigned values before 1.0.
 
-280 tests pass: 36 conformance, 244 implementation. The conformance suite runs on Python 3.9 with
+305 tests pass: 36 conformance, 269 implementation. The conformance suite runs on Python 3.9 with
 nothing installed.
 
 ## License

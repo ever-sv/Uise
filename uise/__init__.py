@@ -23,7 +23,7 @@ same code the conformance suite verifies. There is no second implementation here
 from uip.envelope import ReplayStore, UipError
 
 from . import (api, billing, bridges, credits, dashboard, events, keys, log,
-               openapi, ratelimit, suites)
+               openapi, organizations, ratelimit, suites)
 from .agent import Agent, Capability
 from .credits import Credits, InsufficientCredit
 from .identity import Identity
@@ -53,6 +53,7 @@ __all__ = [
     "keys",
     "log",
     "openapi",
+    "organizations",
     "ratelimit",
     "suites",
     "verify_signed_tree_head",

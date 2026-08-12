@@ -242,5 +242,5 @@ def register_account(storage, did, label, rail=RAIL_MANUAL, rail_ref=None,
     if credit_limit is not None and not isinstance(credit_limit, str):
         raise TypeError("credit_limit must be a decimal string, never a float")
     storage.upsert_account(did, label, rail, rail_ref, int(time.time() * 1000),
-                           credit_limit)
+                           credit_limit, "agent")
     return storage.account(did)

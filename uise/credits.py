@@ -6,7 +6,9 @@ card. **You cannot send an invoice to a public key.** Post-paid billing therefor
 only works for organizations under contract; for agents themselves it does not
 work at all.
 
-So a node meters every issuance against an account balance:
+So a node meters every issuance against an account balance. An account is either
+an agent's own DID or an organization shared by many, and this module never needs
+to know which: resolution happens before it is called.
 
   * **Agents** fund a balance in advance. The node debits it per receipt and
     refuses to issue when the balance would go past its limit. No collection risk,
@@ -72,7 +74,7 @@ class Credits(object):
 
     # -- policy -------------------------------------------------------------- #
 
-    def limit_for(self, did):
+    def limit_for(self, account):
         """
         How far below zero this account may go. None means unenforced.
 
@@ -80,28 +82,31 @@ class Credits(object):
         somebody's billing details is administrative, and must never by itself
         decide whether they get served.
         """
-        account = self.storage.account(did)
-        if account is None or account["credit_limit"] is None:
+        record = self.storage.account(account)
+        if record is None or record["credit_limit"] is None:
             return self.default_credit_limit
-        return _decimal(account["credit_limit"], "credit_limit")
+        return _decimal(record["credit_limit"], "credit_limit")
 
-    def set_limit(self, did, limit):
+    def set_limit(self, account, limit):
         """
         Grant an account post-paid terms. A limit above zero means the node keeps
         serving into a negative balance, and that negative balance is the invoice.
         """
-        account = self.storage.account(did)
-        if account is None:
-            raise ValueError("no account on file for %s; register it first" % did)
+        record = self.storage.account(account)
+        if record is None:
+            raise ValueError("no account on file for %s; register it first" % account)
         self.storage.upsert_account(
-            did, account["label"], account["rail"], account["rail_ref"],
-            account["created_at"], str(_decimal(limit, "limit")),
+            account, record["label"], record["rail"], record["rail_ref"],
+            record["created_at"], str(_decimal(limit, "limit")),
+            # Preserved explicitly: changing a limit must not quietly turn an
+            # organization back into a single agent.
+            record["kind"],
         )
-        return self.limit_for(did)
+        return self.limit_for(account)
 
     # -- movements ----------------------------------------------------------- #
 
-    def deposit(self, did, amount, unit=None, reference=None):
+    def deposit(self, account, amount, unit=None, reference=None):
         """
         Record funds that have already arrived elsewhere.
 
@@ -116,10 +121,10 @@ class Credits(object):
         if not reference:
             raise ValueError("a deposit must reference the payment it came from")
         return self.storage.apply_credit(
-            did, unit or self.unit, value, KIND_DEPOSIT, reference, _now_ms()
+            account, unit or self.unit, value, KIND_DEPOSIT, reference, _now_ms()
         )
 
-    def refund(self, did, amount, unit=None, reference=None):
+    def refund(self, account, amount, unit=None, reference=None):
         """Record money returned to the customer, reducing their balance."""
         value = _decimal(amount, "amount")
         if value <= 0:
@@ -127,10 +132,10 @@ class Credits(object):
         if not reference:
             raise ValueError("a refund must reference the payment it reverses")
         return self.storage.apply_credit(
-            did, unit or self.unit, -value, KIND_REFUND, reference, _now_ms()
+            account, unit or self.unit, -value, KIND_REFUND, reference, _now_ms()
         )
 
-    def adjust(self, did, delta, unit=None, reference=None):
+    def adjust(self, account, delta, unit=None, reference=None):
         """
         A deliberate correction, in either direction.
 
@@ -143,22 +148,22 @@ class Credits(object):
         if not reference:
             raise ValueError("an adjustment must say why")
         return self.storage.apply_credit(
-            did, unit or self.unit, value, KIND_ADJUSTMENT, reference, _now_ms()
+            account, unit or self.unit, value, KIND_ADJUSTMENT, reference, _now_ms()
         )
 
     # -- reading ------------------------------------------------------------- #
 
-    def balance(self, did, unit=None):
-        return self.storage.balance(did, unit or self.unit)
+    def balance(self, account, unit=None):
+        return self.storage.balance(account, unit or self.unit)
 
-    def statement(self, did, unit=None, limit=100):
+    def statement(self, account, unit=None, limit=100):
         unit = unit or self.unit
         return {
-            "account": did,
+            "account": account,
             "unit": unit,
-            "balance": str(self.balance(did, unit)),
-            "limit": (None if self.limit_for(did) is None else str(self.limit_for(did))),
-            "entries": self.storage.ledger(did, unit, limit),
+            "balance": str(self.balance(account, unit)),
+            "limit": (None if self.limit_for(account) is None else str(self.limit_for(account))),
+            "entries": self.storage.ledger(account, unit, limit),
         }
 
     def audit(self):
@@ -172,10 +177,10 @@ class Credits(object):
         discrepancies = []
         for row in self.storage.balances():
             stored = Decimal(row["amount"])
-            recomputed = self.storage.recompute_balance(row["did"], row["unit"])
+            recomputed = self.storage.recompute_balance(row["account_id"], row["unit"])
             if stored != recomputed:
                 discrepancies.append({
-                    "account": row["did"],
+                    "account": row["account_id"],
                     "unit": row["unit"],
                     "stored": str(stored),
                     "recomputed": str(recomputed),

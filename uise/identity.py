@@ -52,6 +52,18 @@ class Identity(object):
             raise ValueError("header `from` does not match this identity")
         return _envelope.sign_envelope(header, self._seed)
 
+    def join(self, account):
+        """
+        Attest that this agent agrees to bill to an organization.
+
+        The agent signs rather than the organization asserting, because joining
+        can harm the agent too: one with its own funded balance would start
+        drawing on an account that may have none.
+        """
+        from . import organizations              # imported here to avoid a cycle
+
+        return organizations.attest(self, account)
+
     def sign_receipt_as(self, receipt, role):
         """Add this identity's signature to a receipt under one of the three roles."""
         if role not in _envelope.RECEIPT_SIGNERS:

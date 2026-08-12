@@ -311,7 +311,8 @@ class TestLedger:
         try:
             node.credits.deposit(payee.did, "1.00", reference="bank:1")
             node.storage._db.execute(
-                "UPDATE balances SET amount = '999.00' WHERE did = ?", (payee.did,)
+                "UPDATE balances SET amount = '999.00' WHERE account_id = ?",
+                (payee.did,)
             )
             node.storage._db.commit()
             discrepancies = node.credits.audit()

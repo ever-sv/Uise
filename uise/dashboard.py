@@ -428,7 +428,7 @@ def render(data, session_token=None):
     )
     balance_table = _rows(
         data["credits"]["balances"],
-        [("Account", lambda r: r["label"] or (r["did"][:28] + "...")),
+        [("Account", lambda r: r["label"] or (r["account_id"][:28] + "...")),
          ("Balance", lambda r: "%s %s" % (r["amount"], r["unit"])),
          ("Limit", lambda r: r["credit_limit"] if r["credit_limit"] is not None
           else "node policy"),

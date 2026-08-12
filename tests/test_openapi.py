@@ -79,9 +79,9 @@ class TestFidelity:
                 assert "`%s` scope" % route.scope in operation["description"]
 
     def test_path_parameters_are_derived_from_the_template(self, document):
-        operation = document["paths"][api.PREFIX + "/accounts/{did}/balance"]["get"]
+        operation = document["paths"][api.PREFIX + "/accounts/{account}/balance"]["get"]
         path_params = [p for p in operation["parameters"] if p["in"] == "path"]
-        assert [p["name"] for p in path_params] == ["did"]
+        assert [p["name"] for p in path_params] == ["account"]
         assert all(p["required"] for p in path_params)
 
     def test_write_endpoints_declare_a_body(self, document):
@@ -138,7 +138,7 @@ class TestMoneyIsAlwaysAString:
                 == openapi.DECIMAL_STRING
 
     def test_deposit_amounts_are_decimal_strings(self, document):
-        body = document["paths"][api.PREFIX + "/accounts/{did}/deposits"]["post"]
+        body = document["paths"][api.PREFIX + "/accounts/{account}/deposits"]["post"]
         schema = body["requestBody"]["content"]["application/json"]["schema"]
         assert schema["properties"]["amount"] == openapi.DECIMAL_STRING
         assert "reference" in schema["required"]

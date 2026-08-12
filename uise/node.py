@@ -36,6 +36,7 @@ from .credits import UNLIMITED, Credits, InsufficientCredit
 from .events import EventBus
 from .identity import Identity
 from .keys import ENVIRONMENT_LIVE, ApiKeys
+from .organizations import Organizations
 from .ratelimit import Limiters
 from .storage import Storage
 
@@ -90,6 +91,7 @@ class Node(object):
         # where usage is free and simply accrues. Setting a limit of "0" makes the
         # node strictly prepaid the day pricing turns on, with no retrofit.
         self.credits = Credits(self.storage, default_credit_limit, fee_unit)
+        self.organizations = Organizations(self.storage)
         # The product API stays closed until a credential exists. The protocol
         # endpoints under /uip/v1 remain open, as a protocol must be.
         self.keys = ApiKeys(self.storage, environment)
@@ -115,13 +117,18 @@ class Node(object):
         """
         Record funds that arrived elsewhere, and announce it.
 
+        Paying "for agent X" credits the account X bills to, so money sent on
+        behalf of a member of an organization reaches that organization rather
+        than landing in a dormant balance nobody spends.
+
         Event publication lives here rather than in `Credits` so that every path
         which moves a balance emits exactly one event, and the ledger stays a
         module with no opinion about who is watching.
         """
-        balance = self.credits.deposit(did, amount, unit, reference)
+        account = self.organizations.billing_account(did)
+        balance = self.credits.deposit(account, amount, unit, reference)
         self.events.publish(events_module.CREDIT_DEPOSITED, {
-            "account": did,
+            "account": account,
             "amount": str(amount),
             "unit": unit or self.fee_unit,
             "balance": str(balance),
@@ -201,10 +208,13 @@ class Node(object):
         if not codec.ulid_is_valid(rid):
             raise envelope.UipError("UIP_HEADER_MALFORMED", "rid is not a valid ULID")
 
-        account = billed_to or receipt["payee"]
-        if account not in (receipt["payer"], receipt["payee"]):
+        biller = billed_to or receipt["payee"]
+        if biller not in (receipt["payer"], receipt["payee"]):
             raise envelope.UipError("UIP_DID_INVALID",
                                     "the fee can only be billed to a party of the receipt")
+        # An agent that joined an organization draws on that organization's
+        # balance. One that has not bills to itself, which is the same path.
+        account = self.organizations.billing_account(biller)
 
         # Both parties must already have agreed before the issuer certifies.
         envelope.verify_receipt_signatures(receipt, ("payer", "payee"))

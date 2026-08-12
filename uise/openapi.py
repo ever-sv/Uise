@@ -53,9 +53,13 @@ SCHEMAS = {
     },
     "Account": {
         "type": "object",
-        "required": ["did", "label", "rail", "created_at"],
+        "description": "What a balance belongs to: either an agent's DID or an "
+                       "organization shared by many. A solo agent is an "
+                       "organization of one, so nothing downstream differs.",
+        "required": ["account_id", "kind", "label", "rail", "created_at"],
         "properties": {
-            "did": {"type": "string"},
+            "account_id": {"type": "string"},
+            "kind": {"enum": ["agent", "organization"]},
             "label": {"type": "string"},
             "rail": {"enum": ["manual", "stripe", "stablecoin"]},
             "rail_ref": {"type": ["string", "null"]},
@@ -65,6 +69,30 @@ SCHEMAS = {
                                "inherits the node policy.",
             },
             "created_at": {"type": "integer"},
+        },
+    },
+    "Membership": {
+        "type": "object",
+        "required": ["did", "account_id", "joined_at"],
+        "properties": {
+            "did": {"type": "string", "description": "The agent."},
+            "account_id": {"type": "string", "description": "The account it bills to."},
+            "joined_at": {"type": "integer"},
+        },
+    },
+    "MembershipAttestation": {
+        "type": "object",
+        "description": "The agent's signed consent to bill to an organization. "
+                       "Signed under `uise/1.membership`, a product namespace - "
+                       "organizations are a billing concept, not part of the "
+                       "frozen protocol. Valid for five minutes: an attestation "
+                       "is a statement about now, not a standing permission.",
+        "required": ["agent", "account", "ts", "sig"],
+        "properties": {
+            "agent": {"type": "string"},
+            "account": {"type": "string"},
+            "ts": {"type": "integer"},
+            "sig": {"type": "string"},
         },
     },
     "Balance": {

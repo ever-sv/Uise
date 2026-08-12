@@ -273,6 +273,31 @@ cobrarlo, ni se cobra sin emitirlo. Y `credits.audit()` recalcula cada saldo des
 un total guardado que puede desviarse en silencio del libro del que sale es como los errores de
 dinero sobreviven años.
 
+### Organizaciones: una cuenta, muchos agentes
+
+Una empresa con mil agentes financia **un** saldo y recibe **una** factura, no mil.
+
+Una cuenta es o el DID del propio agente o una organización compartida. **Un agente solo es una
+organización de uno**, así que nada por debajo necesita saber cuál de los dos casos tiene delante —
+el mismo camino de código sirve para ambos.
+
+**La pertenencia exige consentimiento de las dos partes**, y ninguna puede afirmarla sola:
+
+- La **organización** lo demuestra teniendo una credencial con alcance `write` — es quien asume el
+  coste.
+- El **agente** lo demuestra **firmando**, porque unirse también puede perjudicarle: uno con su
+  propio saldo pasaría a consumir de una cuenta que quizá no tenga ninguno.
+
+La firma dura cinco minutos: es una declaración sobre *ahora*, no un permiso permanente. Una copia
+vieja no puede reinscribir a un agente que ya se fue.
+
+Y al salir, el saldo propio del agente sigue intacto. **El dinero nunca se mueve solo**, en ninguna
+dirección.
+
+La atestación se firma bajo `uise/1.membership`, **no** bajo `uip/1`. Las organizaciones son un
+concepto de facturación de este producto, no del protocolo, y los dos espacios no se mezclan: el
+protocolo está congelado y esto no.
+
 > Esto necesita confirmación de un abogado antes de facturar el primer dólar. La estructura es
 > sólida y común, pero no es mi terreno.
 

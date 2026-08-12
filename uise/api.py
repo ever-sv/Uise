@@ -338,39 +338,45 @@ def accounts(node, request, params, key):
     return 200, {"accounts": node.storage.accounts()}
 
 
-@router.get(PREFIX + "/accounts/{did}",
+@router.get(PREFIX + "/accounts/{account}",
             summary="One billing account.",
             response_schema=schema_ref("Account"), errors=("404",))
 def account(node, request, params, key):
-    record = node.storage.account(params["did"])
+    record = node.storage.account(params["account"])
     if record is None:
         raise ApiError(404, ERROR_NOT_FOUND, "no such account")
     return 200, record
 
 
-@router.get(PREFIX + "/accounts/{did}/balance",
+@router.get(PREFIX + "/accounts/{account}/balance",
             summary="Current balance and credit limit.",
             parameters=(query("unit", "Currency or token symbol."),),
             response_schema=schema_ref("Balance"))
 def balance(node, request, params, key):
-    did = params["did"]
+    """
+    Asking for an agent that joined an organization returns that organization's
+    balance, because that is the one which governs whether it gets served. The
+    resolved identifier comes back in `account`.
+    """
+    account = node.organizations.billing_account(params["account"])
     unit = request.one("unit", node.fee_unit)
-    limit = node.credits.limit_for(did)
+    limit = node.credits.limit_for(account)
     return 200, {
-        "account": did,
+        "account": account,
         "unit": unit,
-        "balance": str(node.credits.balance(did, unit)),
+        "balance": str(node.credits.balance(account, unit)),
         "credit_limit": None if limit is None else str(limit),
     }
 
 
-@router.get(PREFIX + "/accounts/{did}/ledger",
+@router.get(PREFIX + "/accounts/{account}/ledger",
             summary="Every movement on an account, with its cause.",
             parameters=(query("unit", "Currency or token symbol."),) + PAGE_PARAMETERS,
             response_schema=schema_ref("Statement"), errors=("400",))
 def ledger(node, request, params, key):
     unit = request.one("unit", node.fee_unit)
-    return 200, node.credits.statement(params["did"], unit, _page_size(request))
+    account = node.organizations.billing_account(params["account"])
+    return 200, node.credits.statement(account, unit, _page_size(request))
 
 
 @router.get(PREFIX + "/receipts",
@@ -444,7 +450,7 @@ def create_account(node, request, params, key):
     return 201, record
 
 
-@router.post(PREFIX + "/accounts/{did}/deposits",
+@router.post(PREFIX + "/accounts/{account}/deposits",
              summary="Record that money arrived. Never receives money.",
              request_schema={
                  "type": "object",
@@ -472,17 +478,17 @@ def record_deposit(node, request, params, key):
     """
     try:
         balance_after = node.deposit(
-            params["did"],
+            params["account"],
             request.field("amount"),
             request.field("unit", required=False, default=node.fee_unit),
             request.field("reference"),
         )
     except (ValueError, TypeError) as error:
         raise ApiError(400, ERROR_BAD_REQUEST, str(error))
-    return 201, {"account": params["did"], "balance": str(balance_after)}
+    return 201, {"account": params["account"], "balance": str(balance_after)}
 
 
-@router.post(PREFIX + "/accounts/{did}/limit", status=200,
+@router.post(PREFIX + "/accounts/{account}/limit", status=200,
              summary="Grant post-paid terms by raising the credit limit.",
              request_schema={
                  "type": "object",
@@ -496,11 +502,120 @@ def record_deposit(node, request, params, key):
              errors=("400",))
 def set_limit(node, request, params, key):
     try:
-        limit = node.credits.set_limit(params["did"], request.field("credit_limit"))
+        account = node.organizations.billing_account(params["account"])
+        limit = node.credits.set_limit(account, request.field("credit_limit"))
     except (ValueError, TypeError) as error:
         raise ApiError(400, ERROR_BAD_REQUEST, str(error))
-    return 200, {"account": params["did"],
+    return 200, {"account": account,
                  "credit_limit": None if limit is None else str(limit)}
+
+
+# --------------------------------------------------------------------------- #
+# Organizations
+# --------------------------------------------------------------------------- #
+
+@router.get(PREFIX + "/organizations",
+            summary="List organization accounts.",
+            response_schema={"type": "object", "properties": {
+                "organizations": {"type": "array", "items": schema_ref("Account")}}})
+def organizations(node, request, params, key):
+    return 200, {"organizations": node.organizations.list()}
+
+
+@router.post(PREFIX + "/organizations",
+             summary="Open an organization account: one balance, many agents.",
+             request_schema={
+                 "type": "object",
+                 "required": ["label"],
+                 "properties": {
+                     "label": {"type": "string"},
+                     "rail": {"enum": ["manual", "stripe", "stablecoin"]},
+                     "rail_ref": {"type": "string"},
+                     "credit_limit": {"type": "string",
+                                      "description": "Decimal string. Omit to "
+                                                     "inherit the node policy."},
+                 },
+             },
+             response_schema=schema_ref("Account"),
+             response_description="The new organization. It starts with no members.",
+             errors=("400",))
+def create_organization(node, request, params, key):
+    """
+    A company running a thousand agents funds one balance and receives one
+    invoice, instead of topping up a thousand.
+    """
+    try:
+        record = node.organizations.create(
+            request.field("label"),
+            request.field("rail", required=False, default="manual"),
+            request.field("rail_ref", required=False),
+            request.field("credit_limit", required=False),
+        )
+    except (ValueError, TypeError) as error:
+        raise ApiError(400, ERROR_BAD_REQUEST, str(error))
+    return 201, record
+
+
+@router.get(PREFIX + "/organizations/{account}",
+            summary="One organization account.",
+            response_schema=schema_ref("Account"), errors=("404",))
+def organization(node, request, params, key):
+    record = node.organizations.get(params["account"])
+    if record is None:
+        raise ApiError(404, ERROR_NOT_FOUND, "no such organization")
+    return 200, record
+
+
+@router.get(PREFIX + "/organizations/{account}/members",
+            summary="The agents billing to an organization.",
+            response_schema={"type": "object", "properties": {
+                "members": {"type": "array", "items": schema_ref("Membership")}}},
+            errors=("404",))
+def organization_members(node, request, params, key):
+    if node.organizations.get(params["account"]) is None:
+        raise ApiError(404, ERROR_NOT_FOUND, "no such organization")
+    return 200, {"members": node.organizations.members(params["account"])}
+
+
+@router.post(PREFIX + "/organizations/{account}/members",
+             summary="Enrol an agent, given proof that the agent agreed.",
+             request_schema=schema_ref("MembershipAttestation"),
+             response_schema=schema_ref("Membership"),
+             response_description="The membership.",
+             errors=("400", "404"))
+def add_member(node, request, params, key):
+    """
+    Both sides must consent, and neither is trusted to assert it alone.
+
+    The organization proves consent by holding this credential - it is taking on
+    the cost. The agent proves consent by signing, because joining can harm it
+    too: one with its own funded balance would start drawing on an account that
+    may have none.
+    """
+    from .organizations import MembershipRefused   # imported here to avoid a cycle
+
+    if not isinstance(request.body, dict):
+        raise ApiError(400, ERROR_BAD_REQUEST, "a JSON object body is required")
+    try:
+        return 201, node.organizations.add_member(params["account"], request.body)
+    except MembershipRefused as error:
+        raise ApiError(400, ERROR_BAD_REQUEST, str(error))
+    except ValueError as error:
+        raise ApiError(404, ERROR_NOT_FOUND, str(error))
+
+
+@router.delete(PREFIX + "/organizations/members/{did}",
+               scope=keys_module.SCOPE_WRITE,
+               summary="Remove an agent from its organization.",
+               response_schema={"type": "object", "properties": {
+                   "agent": {"type": "string"}, "removed": {"type": "boolean"}}},
+               response_description="The agent bills to itself again. Its own "
+                                    "balance, if any, is untouched.",
+               errors=("404",))
+def remove_member(node, request, params, key):
+    if not node.organizations.remove_member(params["did"]):
+        raise ApiError(404, ERROR_NOT_FOUND, "that agent is not in an organization")
+    return 200, {"agent": params["did"], "removed": True}
 
 
 # --------------------------------------------------------------------------- #
